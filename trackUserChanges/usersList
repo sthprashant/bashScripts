@@ -1,0 +1,34 @@
+#!/bin/bash
+
+logPath=/var/log
+outputHashFile="$logPath"/current_users
+getDateTime=$(date +"%Y-%b-%d %T") #getting date and time 
+
+logFile=/var/log/userList.log #For debugging purposes only, please ignore
+
+users=$(awk -F: 'BEGIN{OFS=":"} $3 >=1000 && $3<=65534 {print $1,$6}' /etc/passwd)
+
+if [[ -f "$outputHashFile" ]] #checking if the  current_users file exists in /var/log
+then
+	echo "$getDateTime $outputHashFile exists" >> "$logFile"  #For debugging purposes only, please ignore
+
+	currentHash=$(cat "$outputHashFile") #existing hash
+	newHash=$(echo "$users" | md5sum)
+ 
+	echo "$getDateTime Current Hash is $currentHash" >> "$logFile" #For debugging purposes only, please ignore
+
+	echo "$getDateTime New Hash is $newHash" >> "$logFile" #For debugging purposes only, please ignore
+
+	if [[ "$newHash" != "$currentHash" ]] #check if the  new hash output  matches the existing hash
+	then
+		echo "$getDateTime Hash has changed" >> "$logFile" #For debugging purposes only, please ignore
+
+		echo "$getDateTime changes occurred" > "$logPath"/user_changes #store date and time changes occured in users_changes
+		echo "$newHash" > "$outputHashFile" #update hashfile with new hash 
+	else
+		echo "$getDateTime Hash is still the same" >> "$logFile" #For debugging purposes only, please ignore
+	fi
+else
+	echo -e "$outputHashFile does not exist\nCreating new file with hash" >> "$logFile" #For debugging purposes only, please ignore
+	echo "$users"| md5sum > "$outputHashFile"
+fi
